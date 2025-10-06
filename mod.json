@@ -1,0 +1,63 @@
+{
+	"geode": "4.8.0",
+	"gd": {
+		"win": "2.2074",
+		"android": "2.2074",
+		"mac": "2.2074",
+		"ios": "2.2074"
+	},
+	"id": "nwo5.jim",
+	"name": "Jim",
+	"version": "v1.0.0",
+	"developer": "Nwo5",
+	"description": "provides emotional support",
+	"tags": ["joke", "offline"],
+	"links": {
+		"source": "https://github.com/Nwo5-trg/Jim",
+		"community": "https://discord.gg/AeFeYWGUxZ"
+	},
+	"resources": {"sprites": ["resources/*.png"]},
+	"settings": {
+		"distance": {
+			"type": "int",
+			"name": "Distance",
+			"description": "percent < best - distance == show jim",
+			"default": 5
+		},
+		"size": {
+			"type": "float",
+			"name": "Size",
+			"default": 250
+		},
+		"path": {
+			"type": "file",
+			"name": "Image Path",
+			"default": "jim"
+		},
+		"entry-duration": {
+			"type": "float",
+			"name": "Entry Duration",
+			"default": 0.35
+		},
+		"exit-delay": {
+			"type": "float",
+			"name": "Exit Delay",
+			"default": 1.5
+		},
+		"exit-duration": {
+			"type": "float",
+			"name": "Exit Duration",
+			"default": 0.35
+		},
+		"offset-x": {
+			"type": "float",
+			"name": "Offset X",
+			"default": -25
+		},
+		"offset-y": {
+			"type": "float",
+			"name": "Offset Y",
+			"default": 0
+		}
+	}
+}
