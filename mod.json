@@ -1,5 +1,5 @@
 {
-	"geode": "4.8.0",
+	"geode": "4.7.0",
 	"gd": {
 		"win": "2.2074",
 		"android": "2.2074",
@@ -9,9 +9,9 @@
 	"id": "nwo5.jim",
 	"name": "Jim",
 	"version": "v1.0.0",
-	"developer": "Nwo5",
+	"developers": ["Nwo5", "RayDeeUx"],
 	"description": "provides emotional support",
-	"tags": ["joke", "offline"],
+	"tags": ["joke", "offline", "gameplay"],
 	"links": {
 		"source": "https://github.com/Nwo5-trg/Jim",
 		"community": "https://discord.gg/AeFeYWGUxZ"
@@ -19,50 +19,291 @@
 	"resources": {"sprites": ["resources/*.png"]},
 	"settings": {
 		"enabled": {
-			"type": "bool",
 			"name": "Enabled",
+			"description": "Toggles the mod.",
+			"type": "bool",
 			"default": true
 		},
-		"distance": {
-			"type": "int",
-			"name": "Distance",
-			"description": "percent < best - distance == show jim",
-			"default": 5
-		},
-		"size": {
+		"percentageThreshold": {
+			"name": "Percentage Threshold",
+			"description": "Threshold (in percent) necessary to show Mr. Jim M. Boree",
 			"type": "float",
-			"name": "Size",
-			"default": 250
+			"default": 0.50,
+			"min": 0.00,
+			"max": 100.0
 		},
-		"path": {
+		"image": {
+			"name": "Image",
+			"description": "The image you want to show (in case you dislike Mr. Jim M. Boree, for whatever reason).\n\n<c-ffffff>JPG/JPEG files are not allowed.</c>",
 			"type": "file",
-			"name": "Image Path",
-			"default": "jim"
+			"default": "{mod_resources_dir}/youCanDoIt.png",
+			"control": {
+				"filters": [
+					{
+						"description": "Image files",
+						"files": [
+							"*.png",
+							"*.gif"
+						]
+					}
+				]
+			}
 		},
-		"entry-duration": {
+		"moveForDuration": {
+			"name": "Move for... (seconds)",
+			"description": "Duration of the Mr. Jim M. Boree animation. <cy>Does not affect playback speed of optional SFX.</c>",
 			"type": "float",
-			"name": "Entry Duration",
-			"default": 0.35
+			"default": 0.50,
+			"min": 0.10,
+			"max": 10.0
 		},
-		"exit-delay": {
-			"type": "float",
-			"name": "Exit Delay",
-			"default": 1.5
+		"startMovingFrom": {
+			"name": "Start Moving From...",
+			"description": "The side of the screen you want the image to start moving from.",
+			"type": "string",
+			"default": "Right",
+			"one-of": [
+				"Right",
+				"Left",
+				"Top",
+				"Bottom",
+				"Top Left",
+				"Top Right",
+				"Bottom Left",
+				"Bottom Right"
+			]
 		},
-		"exit-duration": {
-			"type": "float",
-			"name": "Exit Duration",
-			"default": 0.35
+		"moveToEasingType": {
+			"name": "\"Moving In\" Easing Type",
+			"type": "string",
+			"default": "None (Linear)",
+			"one-of": [
+				"None (Linear)",
+				"Ease In", "Ease Out", "Ease In Out",
+				"Back In", "Back Out", "Back In Out",
+				"Bounce In", "Bounce Out", "Bounce In Out",
+				"Elastic In", "Elastic Out", "Elastic In Out",
+				"Exponential In", "Exponential Out", "Exponential In Out",
+				"Sine In", "Sine Out", "Sine In Out"
+			]
 		},
-		"offset-x": {
+		"moveToEasingRate": {
+			"name": "\"Moving In\" Easing Rate",
 			"type": "float",
-			"name": "Offset X",
-			"default": -25
+			"default": 0.60,
+			"min": 0.10,
+			"max": 4.00
 		},
-		"offset-y": {
+		"initialScale": {
+			"name": "Initial Scale",
 			"type": "float",
-			"name": "Offset Y",
-			"default": 0
+			"default": 1.00,
+			"min": 0.00,
+			"max": 1.00
+		},
+		"scaleToEasingType": {
+			"name": "\"Scaling In\" Easing Type",
+			"type": "string",
+			"default": "None (Linear)",
+			"one-of": [
+				"None (Linear)",
+				"Ease In", "Ease Out", "Ease In Out",
+				"Back In", "Back Out", "Back In Out",
+				"Bounce In", "Bounce Out", "Bounce In Out",
+				"Elastic In", "Elastic Out", "Elastic In Out",
+				"Exponential In", "Exponential Out", "Exponential In Out",
+				"Sine In", "Sine Out", "Sine In Out"
+			]
+		},
+		"scaleToEasingRate": {
+			"name": "\"Scaling In\" Easing Rate",
+			"type": "float",
+			"default": 0.60,
+			"min": 0.10,
+			"max": 4.00
+		},
+		"initialRotation": {
+			"name": "Initial Rotation",
+			"type": "float",
+			"default": 0.000,
+			"min": 0.000,
+			"max": 360.0
+		},
+		"rotateToEasingType": {
+			"name": "\"Rotating In\" Easing Type",
+			"type": "string",
+			"default": "None (Linear)",
+			"one-of": [
+				"None (Linear)",
+				"Ease In", "Ease Out", "Ease In Out",
+				"Back In", "Back Out", "Back In Out",
+				"Bounce In", "Bounce Out", "Bounce In Out",
+				"Elastic In", "Elastic Out", "Elastic In Out",
+				"Exponential In", "Exponential Out", "Exponential In Out",
+				"Sine In", "Sine Out", "Sine In Out"
+			]
+		},
+		"rotateToEasingRate": {
+			"name": "\"Rotating In\" Easing Rate",
+			"type": "float",
+			"default": 0.60,
+			"min": 0.10,
+			"max": 4.00
+		},
+		"initialColor": {
+			"name": "Initial Color",
+			"description": "Why would you want to color Mr. Jim M. Boree? Mr. Jim M. Boree is already perfect.",
+			"type": "color",
+			"default": "#FFFFFF"
+		},
+		"initialOpacity": {
+			"name": "Initial Opacity",
+			"type": "int",
+			"default": 255,
+			"min": 0,
+			"max": 255
+		},
+		"moveToX": {
+			"name": "Move to... (X Position) (%)",
+			"type": "int",
+			"default": 50,
+			"min": 0,
+			"max": 100
+		},
+		"moveToY": {
+			"name": "Move to... (Y Position) (%)",
+			"type": "int",
+			"default": 65,
+			"min": 0,
+			"max": 100
+		},
+		"scaleTo": {
+			"name": "Scale To...",
+			"type": "float",
+			"default": 0.75,
+			"min": 0.50,
+			"max": 1.00
+		},
+		"colorTo": {
+			"name": "Color To...",
+			"description": "Why would you want to color Mr. Jim M. Boree? Mr. Jim M. Boree is already perfect.",
+			"type": "color",
+			"default": "#FFFFFF"
+		},
+		"holdForDuration": {
+			"name": "Hold for... (seconds)",
+			"description": "How long Mr. Jim M. Boree should be on screen before fading away. <cy>Does not affect playback speed of optional SFX.</c>",
+			"type": "float",
+			"default": 0.50,
+			"min": 0.10,
+			"max": 5.00
+		},
+		"returnToDuration": {
+			"name": "Move away for... (seconds)",
+			"description": "How long Mr. Jim M. Boree should be on screen before fading away. <cy>Does not affect playback speed of optional SFX.</c>",
+			"type": "float",
+			"default": 1.00,
+			"min": 0.10,
+			"max": 10.0
+		},
+		"moveBackToEasingType": {
+			"name": "\"Moving Back\" Easing Type",
+			"type": "string",
+			"default": "None (Linear)",
+			"one-of": [
+				"None (Linear)",
+				"Ease In", "Ease Out", "Ease In Out",
+				"Back In", "Back Out", "Back In Out",
+				"Bounce In", "Bounce Out", "Bounce In Out",
+				"Elastic In", "Elastic Out", "Elastic In Out",
+				"Exponential In", "Exponential Out", "Exponential In Out",
+				"Sine In", "Sine Out", "Sine In Out"
+			]
+		},
+		"moveBackToEasingRate": {
+			"name": "\"Moving Back\" Easing Rate",
+			"type": "float",
+			"default": 0.60,
+			"min": 0.10,
+			"max": 4.00
+		},
+		"scaleBackToEasingType": {
+			"name": "\"Scaling Back\" Easing Type",
+			"type": "string",
+			"default": "None (Linear)",
+			"one-of": [
+				"None (Linear)",
+				"Ease In", "Ease Out", "Ease In Out",
+				"Back In", "Back Out", "Back In Out",
+				"Bounce In", "Bounce Out", "Bounce In Out",
+				"Elastic In", "Elastic Out", "Elastic In Out",
+				"Exponential In", "Exponential Out", "Exponential In Out",
+				"Sine In", "Sine Out", "Sine In Out"
+			]
+		},
+		"scaleBackToEasingRate": {
+			"name": "\"Scaling Back\" Easing Rate",
+			"type": "float",
+			"default": 0.60,
+			"min": 0.10,
+			"max": 4.00
+		},
+		"rotateBackToEasingType": {
+			"name": "\"Rotating Back\" Easing Type",
+			"type": "string",
+			"default": "None (Linear)",
+			"one-of": [
+				"None (Linear)",
+				"Ease In", "Ease Out", "Ease In Out",
+				"Back In", "Back Out", "Back In Out",
+				"Bounce In", "Bounce Out", "Bounce In Out",
+				"Elastic In", "Elastic Out", "Elastic In Out",
+				"Exponential In", "Exponential Out", "Exponential In Out",
+				"Sine In", "Sine Out", "Sine In Out"
+			]
+		},
+		"rotateBackToEasingRate": {
+			"name": "\"Rotating Back\" Easing Rate",
+			"type": "float",
+			"default": 0.60,
+			"min": 0.10,
+			"max": 4.00
+		},
+		"sfx": {
+			"name": "SFX",
+			"description": "The SFX you want to play in addition to the image (in case you want it, for whatever reason).",
+			"type": "file",
+			"default": "",
+			"control": {
+				"filters": [
+					{
+						"description": "Audio files",
+						"files": [
+							"*.mp3",
+							"*.oga",
+							"*.ogg",
+							"*.wav",
+							"*.flac"
+						]
+					}
+				]
+			}
+		},
+		"volume": {
+			"name": "SFX Volume (%)",
+			"description": "The volume of the SFX, if you've selected one already.",
+			"type": "int",
+			"default": 50,
+			"min": 0,
+			"max": 100
+		},
+		"logging": {
+			"name": "Logging",
+			"type": "bool",
+			"default": false
 		}
+	},
+	"dependencies": {
+		"prevter.imageplus": ">=1.0.3"
 	}
 }
