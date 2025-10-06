@@ -5,6 +5,7 @@ using namespace geode::prelude;
 
 class $modify(PlayLayerHook, PlayLayer) {
     struct Fields {
+        bool enabled = Mod::get()->getSettingValue<bool>("enabled");
         int distance = Mod::get()->getSettingValue<int64_t>("distance"); // percent
         float size = Mod::get()->getSettingValue<double>("size");
         float entryDuration = Mod::get()->getSettingValue<double>("entry-duration");
@@ -23,6 +24,8 @@ class $modify(PlayLayerHook, PlayLayer) {
 
     bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
         if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
+
+        if (!m_fields->enabled) return true;
         
         // yoinked from doki mod cuz its prolly safe
         auto str = string::pathToString(m_fields->path);
@@ -62,7 +65,7 @@ class $modify(PlayLayerHook, PlayLayer) {
     void updateProgressbar() {
         PlayLayer::updateProgressbar();
 
-        if (m_level->m_normalPercent == 0 || m_isPlatformer || !m_startingFromBeginning) return;
+        if (m_level->m_normalPercent == 0 || m_isPlatformer || !m_startingFromBeginning || !m_fields->enabled) return;
 
         int percent = getCurrentPercentInt();
         if (!m_inResetDelay && !m_fields->showedJim && percent > m_level->m_normalPercent - m_fields->distance) {
@@ -74,6 +77,8 @@ class $modify(PlayLayerHook, PlayLayer) {
     }
 
     void resetJim() {
+        if (!m_fields->enabled) return;
+
         m_fields->showedJim = false;
         m_fields->hiddenJim = false;
 

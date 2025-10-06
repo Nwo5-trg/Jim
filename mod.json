@@ -18,6 +18,11 @@
 	},
 	"resources": {"sprites": ["resources/*.png"]},
 	"settings": {
+		"enabled": {
+			"type": "bool",
+			"name": "Enabled",
+			"default": true
+		},
 		"distance": {
 			"type": "int",
 			"name": "Distance",
