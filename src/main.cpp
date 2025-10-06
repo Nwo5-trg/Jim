@@ -65,9 +65,16 @@ class $modify(PlayLayerHook, PlayLayer) {
     void updateProgressbar() {
         PlayLayer::updateProgressbar();
 
-        if (m_level->m_normalPercent == 0 || m_isPlatformer || !m_startingFromBeginning || !m_fields->enabled) return;
+        if (
+            m_isPlatformer 
+            || m_startPosObject
+            || m_level->m_normalPercent == 0 
+            || m_level->m_normalPercent == 100 
+            || !m_fields->enabled
+        ) return;
 
         int percent = getCurrentPercentInt();
+
         if (!m_inResetDelay && !m_fields->showedJim && percent > m_level->m_normalPercent - m_fields->distance) {
             showJim();
         }
@@ -77,7 +84,7 @@ class $modify(PlayLayerHook, PlayLayer) {
     }
 
     void resetJim() {
-        if (!m_fields->enabled) return;
+        if (!m_fields->enabled || !m_fields->jim) return;
 
         m_fields->showedJim = false;
         m_fields->hiddenJim = false;
@@ -91,6 +98,8 @@ class $modify(PlayLayerHook, PlayLayer) {
     }
 
     void showJim() {
+        if (!m_fields->jim) return;
+
         m_fields->showedJim = true;
 
         m_fields->jim->setVisible(true);
@@ -103,6 +112,8 @@ class $modify(PlayLayerHook, PlayLayer) {
     }
 
     void hideJim() {
+        if (!m_fields->jim) return;
+        
         m_fields->hiddenJim = true;
 
         auto winSize = CCDirector::get()->getWinSize();
