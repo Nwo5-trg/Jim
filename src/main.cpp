@@ -1,125 +1,263 @@
-#include <Geode/Geode.hpp>
 #include <Geode/modify/PlayLayer.hpp>
+#include "Manager.hpp"
 
 using namespace geode::prelude;
 
-class $modify(PlayLayerHook, PlayLayer) {
-    struct Fields {
-        bool enabled = Mod::get()->getSettingValue<bool>("enabled");
-        int distance = Mod::get()->getSettingValue<int64_t>("distance"); // percent
-        float size = Mod::get()->getSettingValue<double>("size");
-        float entryDuration = Mod::get()->getSettingValue<double>("entry-duration");
-        float exitDelay = Mod::get()->getSettingValue<double>("exit-delay");
-        float exitDuration = Mod::get()->getSettingValue<double>("exit-duration");
-        CCPoint offset = ccp(
-            Mod::get()->getSettingValue<double>("offset-x"),
-            Mod::get()->getSettingValue<double>("offset-y")
-        );
-        std::filesystem::path path = Mod::get()->getSettingValue<std::filesystem::path>("path");
+bool enabled = false;
+bool addedMrJimBoree = false;
+bool alreadyRan = false;
+bool currentlyFormingSequence = false;
 
-        bool showedJim = false;
-        bool hiddenJim = false;
-        CCSprite* jim = nullptr;
-    };
+double percentageThreshold = -1.f;
 
-    bool init(GJGameLevel* level, bool useReplay, bool dontCreateObjects) {
-        if (!PlayLayer::init(level, useReplay, dontCreateObjects)) return false;
+std::filesystem::path sfxPath;
 
-        if (!m_fields->enabled) return true;
-        
-        // yoinked from doki mod cuz its prolly safe
-        auto str = string::pathToString(m_fields->path);
-        m_fields->jim = CCSprite::create(str.c_str());
-        if (!m_fields->jim || str.empty() || !std::filesystem::exists(m_fields->path)) {
-            m_fields->jim = CCSprite::create("jim.png"_spr);
-        }
-        else {
-            CCImage* image = new CCImage();
-            image->initWithImageFile(str.c_str());
+class $modify(MyPlayLayer, PlayLayer) {
+	static CCSprite* createSpriteCustom(const char* pathToFile) {
+		auto sprite = new CCSprite();
+		if (sprite->initWithFile(pathToFile)) {
+			sprite->autorelease();
+			return sprite;
+		}
+		delete sprite;
+		return nullptr;
+	}
+	static CCActionInterval* getEaseTypeForCustomScaleAnimation(CCActionInterval* action, const std::string& modStringSetting, const float easingRate) {
+		if (!action) return nullptr;
+		const std::string& easeType = utils::string::toLower(modStringSetting);
 
-            CCTexture2D* texture = new CCTexture2D();
-            texture->initWithImage(image);
+		if (easeType == "none (linear)" || easeType == "none" || easeType == "linear") return action;
 
-            m_fields->jim = CCSprite::createWithTexture(texture);
-        }
+		if (easeType == "ease in") return CCEaseIn::create(action, easingRate);
+		if (easeType == "ease out") return CCEaseOut::create(action, easingRate);
+		if (easeType == "ease in out") return CCEaseInOut::create(action, easingRate);
 
-        m_fields->jim->setID("jim"_spr);
-        this->addChild(m_fields->jim);
+		if (easeType == "back in") return CCEaseBackIn::create(action);
+		if (easeType == "back out") return CCEaseBackOut::create(action);
+		if (easeType == "back in out") return CCEaseBackInOut::create(action);
 
-        m_fields->jim->setScale(
-            m_fields->size / 
-            std::max(m_fields->jim->getContentWidth(), m_fields->jim->getContentHeight()) 
-        );
+		if (easeType == "bounce in") return CCEaseBounceIn::create(action);
+		if (easeType == "bounce out") return CCEaseBounceOut::create(action);
+		if (easeType == "bounce in out") return CCEaseBounceInOut::create(action);
 
-        resetJim();
+		if (easeType == "elastic in") return CCEaseElasticIn::create(action, easingRate);
+		if (easeType == "elastic out") return CCEaseElasticOut::create(action, easingRate);
+		if (easeType == "elastic in out") return CCEaseElasticInOut::create(action, easingRate);
 
-        return true;
-    }
+		if (easeType == "exponential in") return CCEaseExponentialIn::create(action);
+		if (easeType == "exponential out") return CCEaseExponentialOut::create(action);
+		if (easeType == "exponential in out") return CCEaseExponentialInOut::create(action);
 
-    void resetLevel() {
-        resetJim();
+		if (easeType == "sine in") return CCEaseSineIn::create(action);
+		if (easeType == "sine out") return CCEaseSineOut::create(action);
+		if (easeType == "sine in out") return CCEaseSineInOut::create(action);
 
-        PlayLayer::resetLevel();
-    }
+		return action;
+	}
+	void resetLevel() {
+		PlayLayer::resetLevel();
+		alreadyRan = false;
+		if (!m_uiLayer || !m_uiLayer->getChildByID("you-can-do-it"_spr)) return;
+		CCNode* mrJimBoree = m_uiLayer->getChildByID("you-can-do-it"_spr);
+		mrJimBoree->stopAllActions();
+		MyPlayLayer::resetMrJimboree(static_cast<CCSprite*>(mrJimBoree));
+	}
+	void resetMrJimboree(CCSprite* mrJimBoree) {
+		const CCSize winSize = CCDirector::get()->getWinSize();
+		const std::string& startingPosition = geode::utils::string::toLower(Mod::get()->getSettingValue<std::string>("startMovingFrom"));
+		if (startingPosition == "top") {
+			mrJimBoree->setAnchorPoint({.5f, 0.f});
+			mrJimBoree->setPosition({winSize.width * .5f, winSize.height + 100.f});
+		} else if (startingPosition == "bottom") {
+			mrJimBoree->setAnchorPoint({.5f, 1.f});
+			mrJimBoree->setPosition({winSize.width * .5f, -100.f});
+		} else if (startingPosition == "right") {
+			mrJimBoree->setAnchorPoint({0.f, .5f});
+			mrJimBoree->setPosition({winSize.width + 100.f, winSize.height * .5f});
+		} else if (startingPosition == "left") {
+			mrJimBoree->setAnchorPoint({1.f, .5f});
+			mrJimBoree->setPosition({-100.f, winSize.height * .5f});
+		} else if (startingPosition == "top right") {
+			mrJimBoree->setAnchorPoint({0.f, 0.f});
+			mrJimBoree->setPosition({winSize.width + 100.f, winSize.height + 100.f});
+		} else if (startingPosition == "top left") {
+			mrJimBoree->setAnchorPoint({1.f, 0.f});
+			mrJimBoree->setPosition({-100.f, winSize.height + 100.f});
+		} else if (startingPosition == "bottom right") {
+			mrJimBoree->setAnchorPoint({0.f, 1.f});
+			mrJimBoree->setPosition({winSize.width + 100.f, -100.f});
+		} else if (startingPosition == "bottom left") {
+			mrJimBoree->setAnchorPoint({1.f, 1.f});
+			mrJimBoree->setPosition({-100.f, -100.f});
+		} else {
+			mrJimBoree->setAnchorPoint({0.f, .5f});
+			mrJimBoree->setPositionX(winSize.width + 100.f);
+		}
 
-    void updateProgressbar() {
-        PlayLayer::updateProgressbar();
+		mrJimBoree->setScale(std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("initialScale")), 0.f, 1.f) * std::max(mrJimBoree->getContentWidth(), mrJimBoree->getContentHeight()));
+		mrJimBoree->setOpacity(std::clamp<int>(static_cast<int>(Mod::get()->getSettingValue<int64_t>("initialOpacity")), 0, 255));
+		mrJimBoree->setRotation(std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("initialRotation")), 0.f, 360.f));
+		mrJimBoree->setColor(Mod::get()->getSettingValue<ccColor3B>("initialColor"));
 
-        if (
-            m_isPlatformer 
-            || m_startPosObject
-            || m_level->m_normalPercent == 0 
-            || m_level->m_normalPercent == 100 
-            || !m_fields->enabled
-        ) return;
+		mrJimBoree->setCascadeColorEnabled(false);
+		mrJimBoree->setCascadeOpacityEnabled(false);
+	}
+	bool init(GJGameLevel* level, bool p1, bool p2) {
+		if (!PlayLayer::init(level, p1, p2)) return false;
+		if (!m_uiLayer || !level || level->isPlatformer() || m_isPlatformer) return true;
+		if (!Mod::get()->getSettingValue<bool>("enabled")) return true;
 
-        int percent = getCurrentPercentInt();
+		const std::filesystem::path& imagePath = Mod::get()->getSettingValue<std::filesystem::path>("image");
+		if (!std::filesystem::exists(imagePath) || (imagePath.extension() != ".png" && imagePath.extension() != ".gif")) return true; // moveToEasingType
 
-        if (!m_inResetDelay && !m_fields->showedJim && percent > m_level->m_normalPercent - m_fields->distance) {
-            showJim();
-        }
-        else if (!m_fields->hiddenJim && percent > m_level->m_normalPercent + m_fields->exitDelay) {
-            hideJim();
-        }
-    }
+		CCSprite* mrJimBoree = MyPlayLayer::createSpriteCustom(geode::utils::string::pathToString(imagePath).c_str());
+		if (!mrJimBoree) return true;
 
-    void resetJim() {
-        if (!m_fields->enabled || !m_fields->jim) return;
+		mrJimBoree->setID("you-can-do-it"_spr);
+		m_uiLayer->addChild(mrJimBoree);
 
-        m_fields->showedJim = false;
-        m_fields->hiddenJim = false;
+		MyPlayLayer::resetMrJimboree(mrJimBoree);
 
-        m_fields->jim->setVisible(false);
+		addedMrJimBoree = true;
 
-        auto winSize = CCDirector::get()->getWinSize();
-        m_fields->jim->setPosition({winSize.width + (m_fields->size / 2), winSize.height / 2});
+		if (!std::filesystem::exists(sfxPath)) return true;
 
-        m_fields->jim->stopAllActions();
-    }
+		Manager* manager = Manager::get();
+		manager->system->createSound(geode::utils::string::pathToString(sfxPath).c_str(), FMOD_DEFAULT, nullptr, &manager->sound);
 
-    void showJim() {
-        if (!m_fields->jim) return;
+		return true;
+	}
+	void updateInfoLabel() {
+		PlayLayer::updateInfoLabel();
+		if (!m_uiLayer || !m_level || m_level->isPlatformer() || m_isPlatformer || !m_player1 || m_player1->m_isDead || m_isTestMode || m_isPracticeMode) return;
+		if (!enabled || !addedMrJimBoree || alreadyRan || currentlyFormingSequence) return;
+		if (!m_uiLayer->getChildByID("you-can-do-it"_spr)) return;
 
-        m_fields->showedJim = true;
+		const int percent = m_level->m_normalPercent.value();
+		if (percent < 1 || percent > 99) return;
+		if (std::abs(PlayLayer::getCurrentPercent() - static_cast<float>(percent)) > percentageThreshold) return;
 
-        m_fields->jim->setVisible(true);
+		CCSprite* mrJimBoree = static_cast<CCSprite*>(m_uiLayer->getChildByID("you-can-do-it"_spr));
+		MyPlayLayer::resetMrJimboree(mrJimBoree);
 
-        auto winSize = CCDirector::get()->getWinSize();
-        m_fields->jim->runAction(CCMoveTo::create(
-            m_fields->entryDuration,
-            ccp(winSize.width - (m_fields->size / 2), winSize.height / 2) + m_fields->offset
-        ));
-    }
+		const float moveForDuration = std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("moveForDuration")), .1f, 10.f);
+		const float returnToDuration = std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("returnToDuration")), .1f, 10.f);
 
-    void hideJim() {
-        if (!m_fields->jim) return;
-        
-        m_fields->hiddenJim = true;
+		const ccColor3B cocosIsFuckingStupid = Mod::get()->getSettingValue<ccColor3B>("colorTo");
 
-        auto winSize = CCDirector::get()->getWinSize();
-        m_fields->jim->runAction(CCMoveTo::create(
-            m_fields->exitDuration,
-            {m_fields->jim->getPositionX(), winSize.height + (m_fields->size / 2)}
-        ));
-    }
+		const CCPoint originalPosition = mrJimBoree->getPosition();
+		const GLubyte originalOpacity = mrJimBoree->getOpacity();
+		const float originalRotation = mrJimBoree->getRotation();
+		const ccColor3B originalColor = mrJimBoree->getColor();
+		const float originalScale = mrJimBoree->getScale();
+
+		const CCSize winSize = CCDirector::get()->getWinSize();
+		const float xPosAfterCalculation = winSize.width * (static_cast<float>(std::clamp<int>(static_cast<int>(Mod::get()->getSettingValue<int64_t>("moveToX")), 0, 100)) / 100.f);
+		const float yPosAfterCalculation = winSize.height * (static_cast<float>(std::clamp<int>(static_cast<int>(Mod::get()->getSettingValue<int64_t>("moveToY")), 0, 100)) / 100.f);
+
+		currentlyFormingSequence = true;
+
+		CCActionInterval* moveToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCMoveTo::create(moveForDuration, {xPosAfterCalculation, yPosAfterCalculation}),
+			Mod::get()->getSettingValue<std::string>("moveToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("moveToEasingRate")),
+				.1f, 4.f
+			)
+		);
+		CCActionInterval* rotateToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCRotateTo::create(moveForDuration, 0),
+			Mod::get()->getSettingValue<std::string>("rotateToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("rotateToEasingRate")),
+				.1f, 4.f
+			)
+		);
+		CCActionInterval* scaleToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCScaleTo::create(
+				moveForDuration,
+				std::clamp<float>(
+					static_cast<float>(Mod::get()->getSettingValue<double>("scaleTo"))
+					* std::max(mrJimBoree->getContentWidth(), mrJimBoree->getContentHeight()),
+					.5f, 1.f
+				)
+			), Mod::get()->getSettingValue<std::string>("scaleToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("scaleToEasingRate")),
+				.1f, 4.f
+			)
+		);
+		CCFadeTo* fadeToAction = CCFadeTo::create(moveForDuration, 255);
+		CCTintTo* tintToAction = CCTintTo::create(moveForDuration, cocosIsFuckingStupid.r, cocosIsFuckingStupid.g, cocosIsFuckingStupid.b);
+		CCSpawn* spawnToAction = CCSpawn::create(moveToAction, rotateToAction, scaleToAction, fadeToAction, tintToAction, nullptr);
+
+		CCDelayTime* holdForDuration = CCDelayTime::create(
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("holdForDuration")),
+				.1f, 5.f
+			) + moveForDuration
+		);
+
+		CCActionInterval* moveBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCMoveTo::create(returnToDuration, originalPosition),
+			Mod::get()->getSettingValue<std::string>("moveBackToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("moveBackToEasingRate")),.1f, 4.f
+			)
+		);
+		CCActionInterval* rotateBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCRotateTo::create(returnToDuration, originalRotation),
+			Mod::get()->getSettingValue<std::string>("scaleBackToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("rotateBackToEasingRate")),.1f, 4.f
+			)
+		);
+		CCActionInterval* scaleBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCScaleTo::create(returnToDuration, originalScale),
+			Mod::get()->getSettingValue<std::string>("rotateBackToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("scaleBackToEasingRate")),.1f, 4.f
+			)
+		);
+		CCFadeTo* fadeBackToAction = CCFadeTo::create(returnToDuration, originalOpacity);
+		CCTintTo* tintBackToAction = CCTintTo::create(returnToDuration, originalColor.r, originalColor.g, originalColor.b);
+		CCSpawn* spawnBackToAction = CCSpawn::create(moveBackToAction, rotateBackToAction, scaleBackToAction, fadeBackToAction, tintBackToAction, nullptr);
+
+		CCSequence* fullSequence = CCSequence::create(spawnToAction, holdForDuration, spawnBackToAction, nullptr);
+		currentlyFormingSequence = false;
+
+		mrJimBoree->runAction(fullSequence);
+		alreadyRan = true;
+
+		if (!std::filesystem::exists(sfxPath)) return;
+		Manager* manager = Manager::get();
+		manager->system->playSound(manager->sound, nullptr, false, &manager->channel);
+		manager->channel->setVolume(static_cast<float>(std::clamp<int>(static_cast<int>(Mod::get()->getSettingValue<int64_t>("volume")), 0, 100)) / 100.f);
+	}
+	void onQuit() {
+		PlayLayer::onQuit();
+		addedMrJimBoree = false;
+		alreadyRan = false;
+		currentlyFormingSequence = false;
+	}
 };
+
+$on_mod(Loaded) {
+	enabled = Mod::get()->getSettingValue<bool>("enabled");
+	percentageThreshold = Mod::get()->getSettingValue<double>("percentageThreshold");
+	sfxPath = Mod::get()->getSettingValue<std::filesystem::path>("sfx");
+	Mod::get()->setLoggingEnabled(Mod::get()->getSettingValue<bool>("logging"));
+
+	listenForSettingChanges<bool>("enabled", [](bool newEnabled) {
+		enabled = newEnabled;
+	});
+	listenForSettingChanges<double>("percentageThreshold", [](double newPercentageThreshold) {
+		percentageThreshold = newPercentageThreshold;
+	});
+	listenForSettingChanges<std::filesystem::path>("sfx", [](const std::filesystem::path& newSFXPath) {
+		sfxPath = newSFXPath;
+	});
+	listenForSettingChanges<bool>("logging", [](bool newLogging) {
+		Mod::get()->setLoggingEnabled(newLogging);
+	});
+}

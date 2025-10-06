@@ -1,4 +1,4 @@
-name: Build Geode Mod
+name: Build using Release
 
 on:
   workflow_dispatch:
@@ -36,9 +36,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build the mod
+      - name: Build the mod (Release)
         uses: geode-sdk/build-geode-mod@main
         with:
+          # build-config: RelWithDebInfo
+          # export-pdb: true
           combine: true
           target: ${{ matrix.config.target }}
 
@@ -53,5 +55,5 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Build Output
+          name: Build Output (Release)
           path: ${{ steps.build.outputs.build-output }}
