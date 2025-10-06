@@ -36,7 +36,7 @@
 			"name": "Image",
 			"description": "The image you want to show (in case you dislike Mr. Jim M. Boree, for whatever reason).\n\n<c-ffffff>JPG/JPEG files are not allowed.</c>",
 			"type": "file",
-			"default": "{mod_resources_dir}/youCanDoIt.png",
+			"default": "{mod_resources_dir}/jim.png",
 			"control": {
 				"filters": [
 					{
