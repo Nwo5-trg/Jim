@@ -94,7 +94,7 @@ class $modify(MyPlayLayer, PlayLayer) {
 			mrJimBoree->setPositionX(winSize.width + 100.f);
 		}
 
-		mrJimBoree->setScale(std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("initialScale")), 0.f, 1.f));
+		mrJimBoree->setScale(std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("initialScale")), 0.f, 1.f) * std::max(mrJimBoree->getContentWidth(), mrJimBoree->getContentHeight()));
 		mrJimBoree->setOpacity(std::clamp<int>(static_cast<int>(Mod::get()->getSettingValue<int64_t>("initialOpacity")), 0, 255));
 		mrJimBoree->setRotation(std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("initialRotation")), 0.f, 360.f));
 		mrJimBoree->setColor(Mod::get()->getSettingValue<ccColor3B>("initialColor"));
@@ -157,18 +157,68 @@ class $modify(MyPlayLayer, PlayLayer) {
 
 		currentlyFormingSequence = true;
 
-		CCActionInterval* moveToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(CCMoveTo::create(moveForDuration, {xPosAfterCalculation, yPosAfterCalculation}), Mod::get()->getSettingValue<std::string>("moveToEasingType"), std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("moveToEasingRate")), .1f, 4.f));
-		CCActionInterval* rotateToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(CCRotateTo::create(moveForDuration, 0), Mod::get()->getSettingValue<std::string>("scaleToEasingType"), std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("scaleToEasingRate")), .1f, 4.f));
-		CCActionInterval* scaleToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(CCScaleTo::create(moveForDuration, std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("scaleTo")), .5f, 1.f)), Mod::get()->getSettingValue<std::string>("rotateToEasingType"), std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("rotateToEasingRate")), .1f, 4.f));
+		CCActionInterval* moveToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCMoveTo::create(moveForDuration, {xPosAfterCalculation, yPosAfterCalculation}),
+			Mod::get()->getSettingValue<std::string>("moveToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("moveToEasingRate")),
+				.1f, 4.f
+			)
+		);
+		CCActionInterval* rotateToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCRotateTo::create(moveForDuration, 0),
+			Mod::get()->getSettingValue<std::string>("rotateToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("rotateToEasingRate")),
+				.1f, 4.f
+			)
+		);
+		CCActionInterval* scaleToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCScaleTo::create(
+				moveForDuration,
+				std::clamp<float>(
+					static_cast<float>(Mod::get()->getSettingValue<double>("scaleTo"))
+					* std::max(mrJimBoree->getContentWidth(), mrJimBoree->getContentHeight()),
+					.5f, 1.f
+				)
+			), Mod::get()->getSettingValue<std::string>("scaleToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("scaleToEasingRate")),
+				.1f, 4.f
+			)
+		);
 		CCFadeTo* fadeToAction = CCFadeTo::create(moveForDuration, 255);
 		CCTintTo* tintToAction = CCTintTo::create(moveForDuration, cocosIsFuckingStupid.r, cocosIsFuckingStupid.g, cocosIsFuckingStupid.b);
 		CCSpawn* spawnToAction = CCSpawn::create(moveToAction, rotateToAction, scaleToAction, fadeToAction, tintToAction, nullptr);
 
-		CCDelayTime* holdForDuration = CCDelayTime::create(std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("holdForDuration")), .1f, 5.f) + moveForDuration);
+		CCDelayTime* holdForDuration = CCDelayTime::create(
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("holdForDuration")),
+				.1f, 5.f
+			) + moveForDuration
+		);
 
-		CCActionInterval* moveBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(CCMoveTo::create(returnToDuration, originalPosition), Mod::get()->getSettingValue<std::string>("moveBackToEasingType"), std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("moveBackToEasingRate")), .1f, 4.f));
-		CCActionInterval* rotateBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(CCRotateTo::create(returnToDuration, originalRotation), Mod::get()->getSettingValue<std::string>("scaleBackToEasingType"), std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("scaleBackToEasingRate")), .1f, 4.f));
-		CCActionInterval* scaleBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(CCScaleTo::create(returnToDuration, originalScale), Mod::get()->getSettingValue<std::string>("rotateBackToEasingType"), std::clamp<float>(static_cast<float>(Mod::get()->getSettingValue<double>("rotateBackToEasingRate")), .1f, 4.f));
+		CCActionInterval* moveBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCMoveTo::create(returnToDuration, originalPosition),
+			Mod::get()->getSettingValue<std::string>("moveBackToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("moveBackToEasingRate")),.1f, 4.f
+			)
+		);
+		CCActionInterval* rotateBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCRotateTo::create(returnToDuration, originalRotation),
+			Mod::get()->getSettingValue<std::string>("scaleBackToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("rotateBackToEasingRate")),.1f, 4.f
+			)
+		);
+		CCActionInterval* scaleBackToAction = MyPlayLayer::getEaseTypeForCustomScaleAnimation(
+			CCScaleTo::create(returnToDuration, originalScale),
+			Mod::get()->getSettingValue<std::string>("rotateBackToEasingType"),
+			std::clamp<float>(
+				static_cast<float>(Mod::get()->getSettingValue<double>("scaleBackToEasingRate")),.1f, 4.f
+			)
+		);
 		CCFadeTo* fadeBackToAction = CCFadeTo::create(returnToDuration, originalOpacity);
 		CCTintTo* tintBackToAction = CCTintTo::create(returnToDuration, originalColor.r, originalColor.g, originalColor.b);
 		CCSpawn* spawnBackToAction = CCSpawn::create(moveBackToAction, rotateBackToAction, scaleBackToAction, fadeBackToAction, tintBackToAction, nullptr);

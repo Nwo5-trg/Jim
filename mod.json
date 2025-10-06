@@ -2,21 +2,28 @@
 	"geode": "4.7.0",
 	"gd": {
 		"win": "2.2074",
-		"android": "2.2074",
 		"mac": "2.2074",
-		"ios": "2.2074"
+		"ios": "2.2074",
+		"android": "2.2074"
 	},
 	"id": "nwo5.jim",
 	"name": "Jim",
 	"version": "v1.0.0",
 	"developers": ["Nwo5", "RayDeeUx"],
-	"description": "provides emotional support",
+	"description": "you can do it!!! (provides emotional support)",
 	"tags": ["joke", "offline", "gameplay"],
 	"links": {
 		"source": "https://github.com/Nwo5-trg/Jim",
 		"community": "https://discord.gg/AeFeYWGUxZ"
 	},
-	"resources": {"sprites": ["resources/*.png"]},
+	"dependencies": {
+		"prevter.imageplus": ">=1.0.3"
+	},
+	"resources": {
+		"sprites": [
+			"resources/*.png"
+		]
+	},
 	"settings": {
 		"enabled": {
 			"name": "Enabled",
@@ -302,8 +309,5 @@
 			"type": "bool",
 			"default": false
 		}
-	},
-	"dependencies": {
-		"prevter.imageplus": ">=1.0.3"
 	}
 }
